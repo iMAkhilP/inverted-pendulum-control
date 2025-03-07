@@ -27,17 +27,17 @@ U = lambda time: 0.0    # force (N) acting on cart (control force) is function o
 def cart_pendulum(t, state):
     x, dx, theta, dtheta = state
     
-    A = np.array([[M+m, -m*l*np.cos(theta)],
-                 [-m*l*np.cos(theta), m*l**2]])
+    A = np.array([[M+m, m*l*np.cos(theta)],
+                [m*l*np.cos(theta), m*l**2]])
     
     b = np.array([(U(t) - (m*l*np.sin(theta)*dtheta**2) - (b_c*dx)),
-                  ((-m*g*l*np.sin(theta)) - (b_p*dtheta))])
+                ((-m*g*l*np.sin(theta)) - (2*m*dx*dtheta*l*np.sin(theta)) - (b_p*dtheta))])
     
     ddx, ddtheta = np.linalg.solve(A,b)
     
     return [dx, ddx, dtheta, ddtheta]
 
-initial_state = [0, 0, np.pi, 0.01]
+initial_state = [0, 0, -20, 0]
 
 solution = solve_ivp(cart_pendulum, t_span=t_span, y0=initial_state, t_eval=time_points)
 
