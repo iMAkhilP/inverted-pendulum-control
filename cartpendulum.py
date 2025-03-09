@@ -17,6 +17,7 @@ b_p = 0.7   # Damping coefficient for pendulum (kg*m^2/s)
 # x_Ddot        -   acceleration of cart
 # theta_Ddot    -   angular acceleration of pendulum
 
+# Time array
 dt = 0.01
 t_span = (0, 60)
 time_points = np.arange(0, 60, dt)
