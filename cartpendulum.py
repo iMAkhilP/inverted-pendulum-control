@@ -106,7 +106,7 @@ else:
     frames = range(len(time))
 
 ani = FuncAnimation(fig, animate, frames=frames, init_func=init, 
-                    blit=True, interval=20, repeat=False)
+                    blit=True, interval=dt*1000, repeat=False)
 
 plt.title('Cart-Pendulum Animation')
 plt.xlabel('Position (m)')
