@@ -1,5 +1,6 @@
 import numpy as np
 from control.matlab import lqr
+from scipy.integrate import solve_ivp
 
 # Constants
 M = .6  # mass of cart+pendulum
@@ -57,12 +58,9 @@ def constrain(theta):
 def sat(Vsat, V):
     if abs(V) > Vsat:
         # Replace cmp with the Python 3 equivalent
-        return Vsat * ((V > 0) - (V < 0))
+        _ = np.sign(V)
+        return Vsat * _
     return V
-
-def average(x):
-    x_i, k1, k2, k3, k4 = x
-    return x_i + (k1 + 2.0*(k3 + k4) + k2) / 6.0
 
 theta = []
 class Pendulum(object):
@@ -72,7 +70,7 @@ class Pendulum(object):
         self.x = init_conds[:]
         self.end = end
 
-    def derivative(self, u):
+    def derivative(self, t, u):
         V = sat(Vsat, self.control(u))
         #x1 = x, x2 = x_dt, x3 = theta, x4 = theta_dt
         x1, x2, x3, x4 = u
@@ -83,9 +81,10 @@ class Pendulum(object):
         return x
 
     def control(self, u):
+        u = np.asarray(u)
         c = constrain(u[2])
         if c > -np.pi/5 and c < np.pi/5:
-            control_input = np.dot(-K, np.array(u[0:2]+[c]+[u[3]]).T)
+            control_input = np.dot(-K, np.array([u[0], u[1], c, u[3]]).T)
             return control_input.item()
         else:
             return self.swing_up(u)
@@ -102,27 +101,10 @@ class Pendulum(object):
         V = (F - K2*constrain(u[2]))/K1
         return sat(Vsat, V)
 
-    def rk4_step(self, dt):
-        dx = self.derivative(self.x)
-        k2 = [dx_i*dt for dx_i in dx]
-
-        xv = [x_i + delx0_i/2.0 for x_i, delx0_i in zip(self.x, k2)]
-        k3 = [dx_i*dt for dx_i in self.derivative(xv)]
-
-        xv = [x_i + delx1_i/2.0 for x_i, delx1_i in zip(self.x, k3)]
-        k4 = [dx_i*dt for dx_i in self.derivative(xv)]
-
-        xv = [x_i + delx1_2 for x_i, delx1_2 in zip(self.x, k4)]
-        k1 = [self.dt*i for i in self.derivative(xv)]
-
-        self.t += dt
-        # Convert map to list for Python 3 compatibility
-        self.x = list(map(average, zip(self.x, k1, k2, k3, k4)))
-        theta.append(constrain(self.x[2]))
-
     def integrate(self):
-        x = []
-        while self.t <= self.end:
-            self.rk4_step(self.dt)
-            x.append([self.t] + self.x)
-        return np.array(x)
+        def wrapped_derivative(t, y):
+            return self.derivative(t, y)
+        
+        sol = solve_ivp(wrapped_derivative, [0, self.end], self.x, t_eval=np.arange(0, self.end, self.dt))
+        theta.extend([constrain(state[2]) for state in sol.y.T])
+        return np.column_stack((sol.t, sol.y.T))
