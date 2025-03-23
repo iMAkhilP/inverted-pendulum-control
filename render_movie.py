@@ -1,5 +1,5 @@
 import os
-from math import sin, cos, pi
+import numpy as np
 import matplotlib.pyplot as plt
 import pendulum
 
@@ -9,7 +9,7 @@ if not os.path.exists('img'):
 
 pendulum = pendulum.Pendulum(
     .001,
-    [0, 0., pi, 0.],
+    [0, 0., np.pi, 0.],
     10,
 )
 data = pendulum.integrate()
@@ -57,7 +57,7 @@ def draw_point(point):
     cart_plot.cla()
     cart_plot.axis([-1.1,.1,-.5,.5])
     cart_plot.plot([point[1]-.1,point[1]+.1],[0,0],'r-',lw=5)
-    cart_plot.plot([point[1],point[1]+.4*sin(point[3])],[0,.4*cos(point[3])],'g-', lw=4)
+    cart_plot.plot([point[1],point[1]+.4*np.sin(point[3])],[0,.4*np.cos(point[3])],'g-', lw=4)
 
 t = 0
 fps = 25.

@@ -1,5 +1,5 @@
 import numpy as np
-from control.matlab import *
+from control.matlab import lqr
 
 # Constants
 M = .6  # mass of cart+pendulum
@@ -45,7 +45,8 @@ Q = np.array([
     [0, 0, 0, 1]
 ])
 
-(K, X, E) = lqr(A, B, Q, R)
+R_control = np.array([[2]])
+(K, X, E) = lqr(A, B, Q, R_control)
 
 def constrain(theta):
     theta = theta % (2*np.pi)
