@@ -1,5 +1,4 @@
-from math import sin, cos, pi
-from numpy import matrix, array
+import numpy as np
 from control.matlab import *
 
 # Constants
@@ -22,7 +21,8 @@ A11 = -1 * Km**2*Kg**2 / ((M - m*l/L)*R*r**2)
 A12 = -1*g*m*l / (L*(M - m*l/L))
 A31 = Km**2*Kg**2 / (M*(L - m*l/M)*R*r**2)
 A32 = g/(L-m*l/M)
-A = matrix([
+
+A = np.array([
     [0, 1, 0, 0],
     [0, A11, A12, 0],
     [0, 0, 0, 1],
@@ -32,13 +32,13 @@ A = matrix([
 B1 = Km*Kg/((M - m*l/L)*R*r)
 B2 = -1*Km*Kg/(M*(L-m*l/M)*R*r)
 
-B = matrix([
+B = np.array([
     [0],
     [B1],
     [0],
     [B2]
 ])
-Q = matrix([
+Q = np.array([
     [10000, 0, 0, 0],
     [0, 1, 0, 0],
     [0, 0, 10000, 0],
@@ -48,9 +48,9 @@ Q = matrix([
 (K, X, E) = lqr(A, B, Q, R)
 
 def constrain(theta):
-    theta = theta % (2*pi)
-    if theta > pi:
-        theta = -2*pi+theta
+    theta = theta % (2*np.pi)
+    if theta > np.pi:
+        theta = -2*np.pi+theta
     return theta
 
 def sat(Vsat, V):
@@ -76,15 +76,16 @@ class Pendulum(object):
         #x1 = x, x2 = x_dt, x3 = theta, x4 = theta_dt
         x1, x2, x3, x4 = u
         x1_dt, x3_dt = x2, x4
-        x2_dt = (K1*V - K2*x2 - m*l*g*cos(x3)*sin(x3)/L + m*l*sin(x3)*x4**2) / (M - m*l*cos(x3)**2/L)
-        x4_dt = (g*sin(x3) - m*l*x4**2*cos(x3)*sin(x3)/L - cos(x3)*(K1*V + K2*x2)/M) / (L - m*l*cos(x3)**2/M)
+        x2_dt = (K1*V - K2*x2 - m*l*g*np.cos(x3)*np.sin(x3)/L + m*l*np.sin(x3)*x4**2) / (M - m*l*np.cos(x3)**2/L)
+        x4_dt = (g*np.sin(x3) - m*l*x4**2*np.cos(x3)*np.sin(x3)/L - np.cos(x3)*(K1*V + K2*x2)/M) / (L - m*l*np.cos(x3)**2/M)
         x = [x1_dt, x2_dt, x3_dt, x4_dt]
         return x
 
     def control(self, u):
         c = constrain(u[2])
-        if c > -pi/5 and c < pi/5:
-            return float(-K*matrix(u[0:2]+[c]+[u[3]]).T)
+        if c > -np.pi/5 and c < np.pi/5:
+            control_input = np.dot(-K, np.array(u[0:2]+[c]+[u[3]]).T)
+            return control_input.item()
         else:
             return self.swing_up(u)
 
@@ -92,9 +93,10 @@ class Pendulum(object):
         E0 = 0.
         k = 1
         w = (m*g*l/(4*I))**(.5)
-        E = m*g*l*(.5*(u[3]/w)**2 + cos(u[2])-1)
+        E = m*g*l*(.5*(u[3]/w)**2 + np.cos(u[2])-1)
         # Replace cmp with the Python 3 equivalent
-        a = k*(E-E0)*((u[3]*cos(u[2]) > 0) - (u[3]*cos(u[2]) < 0))
+        direction = np.sign(u[3]*np.cos(u[2]))
+        a = k*(E-E0)*direction
         F = M*a
         V = (F - K2*constrain(u[2]))/K1
         return sat(Vsat, V)
@@ -122,4 +124,4 @@ class Pendulum(object):
         while self.t <= self.end:
             self.rk4_step(self.dt)
             x.append([self.t] + self.x)
-        return array(x)
+        return np.array(x)
